@@ -21,35 +21,44 @@ bot.login(TOKEN);
 bot.on('ready', () => {
     console.info(`Logged in as ${bot.user.tag}!`);
 });
-let varam = 12;
 bot.on('message', async({ author, channel, content, guild }) => {
     if (!author.bot) {
 
         if (content.toLocaleLowerCase() == '-start') {
-            if (checkGame()) {
-                sendDM(guild);
+            if (!sessionOn) {
+                {
+                    console.log(guild);
+                    sendDM(guild);
+                }
             } else await channel.send("A game is already in progress!!");
         } else if (content === '-tries') {
             tryPingOutside(channel); // await channel.send('pong');
         } else {
             if (sessionOn)
-                if (checkMessage(content, channel)) {
-                    channel.send("Yayy!!, ${playUser.username} has completed the challenge. The word was ${wordToSay}");
-                }
+                checkMessage(content, channel, author);
         }
     }
 }, );
 
 async function tryPingOutside(channel) {
-    await channel.send('pong');
+    await channel.send(tries);
 }
 
-function checkMessage(content, channel) {
-    if (content.includes(wordsToSay)) {
-        return true;
+function checkMessage(content, channel, author) {
+    tries++;
+    if (content.includes(wordToSay)) {
+        if (!(author.id == playUser.user.id)) {
+            channel.send("Yayy!!, <@" +
+                playUser.user.id + "> has completed the challenge.The word was ***" + wordToSay + "***");
+        } else channel.send("Get rekt <@" +
+            playUser.user.id + ">, you CAN NOT use the word on your own or direct other's to use the word directly. The word was ***" + wordToSay + "***");
+        stopGame();
     } else {
-        if (!checkGame())
-            channel.send("${playUser.username} got wordye'd!");
+        if (tries > 3) {
+            channel.send("Oops!!, <@" +
+                playUser.user.id + "> got rekt.The word was ***" + wordToSay + "***");
+            stopGame();
+        }
 
     }
 }
@@ -60,25 +69,19 @@ async function sendDM(guild) {
     let randKey = keys[randomNo(keys.length)];
     let dmUser = allGuild.get(randKey);
     playUser = dmUser;
-    // dmUser.send("You have been wordye\'d ");
+    wordToSay = randWords();
+    dmUser.send("You have been wordye\'d - The word is ***" + wordToSay + "***");
     startNewGame();
-
 }
 
 function randomNo(length) { return Math.floor(Math.random() * length); }
 
 function startNewGame() {
     sessionOn = true;
-    wordToSay = randWords();
 }
 
 function stopGame() {
     sessionOn = false;
     wordsToSay = "";
-}
-
-function checkGame() {
-    if (sessionOn) {
-        return (tries <= 3); // User has to make it say within 30 messages
-    } else return false;
+    tries = 0;
 }
