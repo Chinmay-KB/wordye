@@ -1,5 +1,6 @@
 require('dotenv').config();
 'use strict';
+var randWords = require('random-words');
 const Discord = require('discord.js');
 const { Client, Intents } = require("discord.js");
 const intents = new Intents([
@@ -10,6 +11,11 @@ const bot = new Discord.Client({ ws: { intents } });
 
 const TOKEN = process.env.TOKEN;
 
+let sessionOn = false;
+let playUser; // Store the user object who is playing
+let tries = 0;
+let wordToSay = "";
+
 bot.login(TOKEN);
 
 bot.on('ready', () => {
@@ -18,35 +24,61 @@ bot.on('ready', () => {
 let varam = 12;
 bot.on('message', async({ author, channel, content, guild }) => {
     if (!author.bot) {
-        let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot);
-        let keys = [...allGuild.keys()];
-        let randKey = keys[randomNo(keys.length)];
-        let dmUser = allGuild.get(randKey);
-        console.log(dmUser.user.username);
-        channel.send(dmUser.user.username);
-        // dmUser.send("You have been wordye\'d ");
-        if (content.toLocaleLowerCase() == 'r')
-            varam = randomNo(10);
-        if (content.toLocaleLowerCase() == 'p')
-            channel.send(varam);
 
-
-
-        if (content.toLowerCase() == "stats") {
-            const Embed = new Discord.MessageEmbed();
-            Embed.setTitle(`Server Stats`)
-                // Using Collection.filter() to separate the online members from the offline members.
-            Embed.addField("Online Members", guild.members.cache.filter(member => member.presence.status != "offline").size);
-            Embed.addField("Offline Members", guild.members.cache.filter(member => member.presence.status == "offline").size);
-            channel.send(Embed);
-        };
-
-        if (content === 'ping') {
-            await channel.send('pong');
-
+        if (content.toLocaleLowerCase() == '-start') {
+            if (checkGame()) {
+                sendDM(guild);
+            } else await channel.send("A game is already in progress!!");
+        } else if (content === '-tries') {
+            tryPingOutside(channel); // await channel.send('pong');
+        } else {
+            if (sessionOn)
+                if (checkMessage(content, channel)) {
+                    channel.send("Yayy!!, ${playUser.username} has completed the challenge. The word was ${wordToSay}");
+                }
         }
     }
 }, );
 
+async function tryPingOutside(channel) {
+    await channel.send('pong');
+}
+
+function checkMessage(content, channel) {
+    if (content.includes(wordsToSay)) {
+        return true;
+    } else {
+        if (!checkGame())
+            channel.send("${playUser.username} got wordye'd!");
+
+    }
+}
+
+async function sendDM(guild) {
+    let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot);
+    let keys = [...allGuild.keys()];
+    let randKey = keys[randomNo(keys.length)];
+    let dmUser = allGuild.get(randKey);
+    playUser = dmUser;
+    // dmUser.send("You have been wordye\'d ");
+    startNewGame();
+
+}
 
 function randomNo(length) { return Math.floor(Math.random() * length); }
+
+function startNewGame() {
+    sessionOn = true;
+    wordToSay = randWords();
+}
+
+function stopGame() {
+    sessionOn = false;
+    wordsToSay = "";
+}
+
+function checkGame() {
+    if (sessionOn) {
+        return (tries <= 3); // User has to make it say within 30 messages
+    } else return false;
+}
