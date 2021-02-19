@@ -6,6 +6,7 @@ const { Client, Intents } = require("discord.js");
 const intents = new Intents([
     Intents.NON_PRIVILEGED, // include all non-privileged intents, would be better to specify which ones you actually need
     "GUILD_MEMBERS", // lets you request guild members (i.e. fixes the issue)
+    "GUILD_PRESENCES"
 ]);
 const bot = new Discord.Client({ ws: { intents } });
 
@@ -31,11 +32,7 @@ bot.on('ready', () => {
     console.info(`Logged in as ${bot.user.tag}!`);
 });
 bot.on('message', async ({ author, channel, content, guild }) => {
-    let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot && v.user.presence.status == 'online');
-    let keys = [...allGuild.keys()];
-    console.log(keys.length);
     if (!author.bot) {
-
         if (content.toLocaleLowerCase() == '&start') {
             if (!sessionOn) {
                 {
@@ -50,20 +47,32 @@ bot.on('message', async ({ author, channel, content, guild }) => {
         } else if (content === '&reset') {
             stopGame();
             await channel.send("The game is reset")
-        } else {
+        } else if (content=== '&players') {
+            howOnline(guild,channel);
+        }
+        else {
+            if (content.toLocaleLowerCase().includes('js') || content.toLocaleLowerCase().includes('javascript'))
+                agree(content, channel);
             if (sessionOn)
                 checkMessage(content.toLowerCase(), channel, author);
-        }
+        } 
+        
     }
-}, );
+});
 
 async function tryPingOutside(channel) {
     await channel.send(tries);
 }
 
+async function howOnline(guild, channel) {
+    let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot && v.user.presence.status == 'online');
+    const Embed = new Discord.MessageEmbed();
+    Embed.addField("Players online", [...allGuild.keys()].length);
+    await channel.send(Embed);
+}
+
 function checkMessage(content, channel, author) {
     tries++;
-    console.log("This is kb's bot");
     if (content.includes(wordToSay)) {
         if (!(author.id == playUser.user.id)) {
             channel.send("Yayy!!, <@" +
@@ -81,14 +90,25 @@ function checkMessage(content, channel, author) {
     }
 }
 
+async function agree(content, channel) {
+    var arr = ['bad', 'trash', 'shit', 'worst', 'garbage', 'poop', 'stink'];
+    var istrue = false;
+    for (truths in arr) {
+        if (content.includes(truths))
+            istrue = true;
+    }
+    await channel.send("JS deserves the hate 💯%")
+}
+
 async function sendDM(guild) {
-    let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot && v.user.presence.status=='online');
+    let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot && v.user.presence.status == 'online');
     let keys = [...allGuild.keys()];
     let randKey = keys[randomNo(keys.length)];
     let dmUser = allGuild.get(randKey);
     playUser = dmUser;
     wordToSay = randWords();
     console.log(playUser.user.username);
+    console.log(keys.length);
     dmUser.send("You have been wordye\'d - The word is ***" + wordToSay + "***");
     startNewGame();
 }
