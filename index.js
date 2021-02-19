@@ -30,7 +30,10 @@ bot.login(TOKEN);
 bot.on('ready', () => {
     console.info(`Logged in as ${bot.user.tag}!`);
 });
-bot.on('message', async({ author, channel, content, guild }) => {
+bot.on('message', async ({ author, channel, content, guild }) => {
+    let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot && v.user.presence.status == 'online');
+    let keys = [...allGuild.keys()];
+    console.log(keys.length);
     if (!author.bot) {
 
         if (content.toLocaleLowerCase() == '&start') {
@@ -60,6 +63,7 @@ async function tryPingOutside(channel) {
 
 function checkMessage(content, channel, author) {
     tries++;
+    console.log("This is kb's bot");
     if (content.includes(wordToSay)) {
         if (!(author.id == playUser.user.id)) {
             channel.send("Yayy!!, <@" +
@@ -78,7 +82,7 @@ function checkMessage(content, channel, author) {
 }
 
 async function sendDM(guild) {
-    let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot);
+    let allGuild = (await guild.members.fetch()).filter((v) => !v.user.bot && v.user.presence.status=='online');
     let keys = [...allGuild.keys()];
     let randKey = keys[randomNo(keys.length)];
     let dmUser = allGuild.get(randKey);
