@@ -1,6 +1,8 @@
 require('dotenv').config();
 'use strict';
 var randWords = require('random-words');
+const Sentiment = require('sentiment');
+const InsultCompliment = require("insult-compliment");
 const Discord = require('discord.js');
 const { Client, Intents } = require("discord.js");
 const intents = new Intents([
@@ -51,8 +53,8 @@ bot.on('message', async ({ author, channel, content, guild }) => {
             howOnline(guild,channel);
         }
         else {
-            if (content.toLocaleLowerCase().includes('js') || content.toLocaleLowerCase().includes('javascript'))
-                agree(content, channel);
+            if (content.toLocaleLowerCase().includes('js') || content.toLocaleLowerCase().includes('javascript') || content.toLocaleLowerCase().includes('python'))
+                agree(content, channel,author);
             if (sessionOn)
                 checkMessage(content.toLowerCase(), channel, author);
         } 
@@ -90,14 +92,17 @@ function checkMessage(content, channel, author) {
     }
 }
 
-async function agree(content, channel) {
-    var arr = ['bad', 'trash', 'shit', 'worst', 'garbage', 'poop', 'stink'];
-    var istrue = false;
-    for (truths in arr) {
-        if (content.includes(truths))
-            istrue = true;
+async function agree(content, channel,author) {
+    var sentiment = new Sentiment();
+    var result = sentiment.analyze(content).comparative;
+    if (result < 0) {
+        var response = "Hey <@" + author.id + ">" + InsultCompliment.Compliment();
+        await channel.send(response);
     }
-    await channel.send("JS deserves the hate 💯%")
+    if (result >= 0) {
+        var response = "Hey <@" + author.id + ">" + InsultCompliment.Insult();
+        await channel.send(response);
+    }
 }
 
 async function sendDM(guild) {
